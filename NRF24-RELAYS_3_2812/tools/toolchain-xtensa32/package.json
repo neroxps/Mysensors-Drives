@@ -1,0 +1,11 @@
+{
+    "description": "GCC for SoC Xtensa L108",
+    "name": "toolchain-xtensa32",
+    "system": [
+        "windows",
+        "windows_amd64",
+        "windows_x86"
+    ],
+    "url": "https://github.com/espressif/esp-idf",
+    "version": "2.50200.80"
+}
