@@ -13,8 +13,8 @@
 //#define MY_TRANSPORT_UPLINK_CHECK_DISABLED
 //#define MY_PARENT_NODE_IS_STATIC //only for clone si24r1
 //#define MY_PARENT_NODE_ID 0 //only for clone si24r1
-char SKETCH_NAME[] = "Relay Actuator";
-char SKETCH_VERSION[] = "1.5";
+char SKETCH_NAME[] = "Relay Actuator 2812";
+char SKETCH_VERSION[] = "1.0";
 
 /*OTA Featuer*/
 #define MY_OTA_FIRMWARE_FEATURE
