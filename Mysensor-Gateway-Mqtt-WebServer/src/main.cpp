@@ -119,14 +119,19 @@ void saveConfigCallback () {
   shouldSaveConfig = true;
 }
 
+// 重置配置
+void Reset_Setting(){
+    Serial.println("Reset Settings and Reboot.");
+    wm.resetSettings();
+    delay(1000);
+    ESP.restart();
+}
+
 //按 GPIO 重置配置
 void Chack_Button_Reset(){
   buttonState = digitalRead(0);
   if (buttonState == LOW) {
-    Serial.println("Reset Settings and Reboot.");
-    delay(1000);
-    wm.resetSettings();
-    ESP.restart();
+    Reset_Setting();
   }
 }
 
@@ -169,6 +174,7 @@ void setupSpiffs(){
     Serial.println("failed to mount FS");
     Serial.println("Format FS....");
     SPIFFS.format();
+    delay(1000);
     ESP.restart();
   }
 }
@@ -178,11 +184,22 @@ bool MY_Mqtt_Config(){
   // init MY_MQTT_SERVER_IPADDRESS
   if (!MY_MQTT_SERVER_IPADDRESS.fromString(mqtt_server))
   {
-    if(!WiFi.hostByName(mqtt_server,MY_MQTT_SERVER_IPADDRESS)){
-      Serial.print("The MQTT server address resolution error.");
-      Chack_Button_Reset();
+    Serial.print( "Resolving Mqtt Server domain names");
+    int i = 0;
+    while (WiFi.hostByName(mqtt_server,MY_MQTT_SERVER_IPADDRESS) != 1 && i < 20){
+      Serial.print(".");
+      Serial.print(WiFi.hostByName(mqtt_server,MY_MQTT_SERVER_IPADDRESS));
+      i++;
+      delay(1000);
+    }
+    if (i == 20){
+      Serial.println("The MQTT server address resolution error.");
+      Reset_Setting();
       return false;
     }
+    Serial.println("Done");
+    Serial.print("MQTT Server IPaddress:");
+    Serial.println(MY_MQTT_SERVER_IPADDRESS);
   }
   // init MY_PORT
   String(mqtt_port) == "" ? MY_PORT=1883 : MY_PORT=String(mqtt_port).toInt();
@@ -234,6 +251,9 @@ void before(){
 
   // set Hostname
   wm.setHostname(MY_HOSTNAME);
+
+  // set Wifi Connect timeout
+  wm.setConnectTimeout(70);
 
   // setup custom parameters
   // 
@@ -317,9 +337,7 @@ void before(){
   // 应用 MQTT 配置
   if (!MY_Mqtt_Config()){
     // 如果 MQTT 地址解析错误，系统清除设置重启
-    wm.resetSettings();
-    delay(3000);
-    ESP.restart();
+    Reset_Setting();
   }
 }
 
