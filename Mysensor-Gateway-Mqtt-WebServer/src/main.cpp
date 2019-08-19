@@ -40,6 +40,10 @@
 #define MY_GATEWAY_MQTT_CLIENT
 #define MY_GATEWAY_ESP32
 
+#define MY_DEFAULT_ERR_LED_PIN 32  // Transfer data error led pin
+#define MY_DEFAULT_RX_LED_PIN  25  // Receive Data led pin
+#define MY_DEFAULT_TX_LED_PIN  27  // Transmit Data led pin
+
 #define MY_WIFI_SSID ""
 #define MY_WIFI_PASSWORD ""
 
@@ -121,10 +125,10 @@ void saveConfigCallback () {
 
 // 重置配置
 void Reset_Setting(){
-    Serial.println("Reset Settings and Reboot.");
-    wm.resetSettings();
-    delay(1000);
-    ESP.restart();
+  Serial.println("Reset Settings and Reboot.");
+  wm.resetSettings();
+  delay(1000);
+  ESP.restart();
 }
 
 //按 GPIO 重置配置
