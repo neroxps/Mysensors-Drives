@@ -9,3 +9,6 @@
 	path = Mysensor-Gateway-Mqtt-WebServer/lib/WiFiManager-development
 	url = https://github.com/tzapu/WiFiManager.git
 	branch = development
+[submodule "Mysensor-Gateway-Mqtt-WebServer/lib/MySensors"]
+	path = Mysensor-Gateway-Mqtt-WebServer/lib/MySensors
+	url = https://github.com/neroxps/MySensors.git
