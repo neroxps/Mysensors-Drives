@@ -1,0 +1,11 @@
+[submodule "Mysensor-Gateway-Mqtt-WebServer/lib/-b"]
+	path = Mysensor-Gateway-Mqtt-WebServer/lib/-b
+	url = https://github.com/mysensors/MySensors.git
+[submodule "Mysensor-Gateway-Mqtt-WebServer/lib/MySensor-development"]
+	path = Mysensor-Gateway-Mqtt-WebServer/lib/MySensor-development
+	url = https://github.com/mysensors/MySensors.git
+	branch = development
+[submodule "Mysensor-Gateway-Mqtt-WebServer/lib/WiFiManager-development"]
+	path = Mysensor-Gateway-Mqtt-WebServer/lib/WiFiManager-development
+	url = https://github.com/tzapu/WiFiManager.git
+	branch = development
