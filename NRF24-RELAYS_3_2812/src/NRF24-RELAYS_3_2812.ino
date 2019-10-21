@@ -1,4 +1,4 @@
-//#define MY_DEBUG
+#define MY_DEBUG
 
 /*Raido*/
 #define MY_RADIO_RF24 // Enable and select radio type attached 
@@ -293,10 +293,10 @@ void changeState(int childId, int newState) {
 
 void receive(const MyMessage &message) {
   // We only expect one type of message from controller. But we better check anyway.
-  if (message.type == V_STATUS && message.sensor != 7  && !mGetAck(message)) {
+  if (message.type == V_STATUS && message.sensor != 7 ) {
     changeState(message.sensor, message.getBool() ? RELAY_ON : RELAY_OFF);
   }
-  if (message.type == V_SCENE_ON && message.sensor != 80  && !mGetAck(message)) {
+  if (message.type == V_SCENE_ON && message.sensor != 80 ) {
     switch (message.sensor) {
       case 81:
         changeState(message.sensor, !state1);
