@@ -47,13 +47,13 @@ char SKETCH_VERSION[] = "1.0";
 
 /*BATTERY&PIN*/
 #define BATTERY_SENSE_PIN  A1 // battery sensor
-#define LED_PIN  8  //battery  sensor
-#define RELAY1_PIN 7
-#define RELAY2_PIN 6
-#define RELAY3_PIN 5 // Arduino Digital I/O pin number for first relay (second on pin+1 etc)
-#define SWITCH1_PIN A2  // Arduino Digital I/O pin number for first relay (second on pin+1 etc)
-#define SWITCH2_PIN A3
-#define SWITCH3_PIN A4  // Arduino Digital I/O pin number for first relay (second on pin+1 etc)
+#define LED_PIN  3  //battery  sensor
+#define RELAY1_PIN A0
+#define RELAY2_PIN A1
+#define RELAY3_PIN A2 // Arduino Digital I/O pin number for first relay (second on pin+1 etc)
+#define SWITCH1_PIN A3  // Arduino Digital I/O pin number for first relay (second on pin+1 etc)
+#define SWITCH2_PIN A4
+#define SWITCH3_PIN A5  // Arduino Digital I/O pin number for first relay (second on pin+1 etc)
 #define RELAY_ON 1  // GPIO value to write to turn on attached relay
 #define RELAY_OFF 0 // GPIO value to write to turn off attached relay
 
