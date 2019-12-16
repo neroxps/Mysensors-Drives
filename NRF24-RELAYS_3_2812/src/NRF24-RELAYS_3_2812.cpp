@@ -76,7 +76,7 @@ static int16_t currentLevel;
 
 /*STATUS LED DATA PIN - 2812*/
 #define DATA_PIN 3 // L1
-#define NUM_LEDS 8 // LED 数量
+#define NUM_LEDS 3 // LED 数量
 CRGB leds[NUM_LEDS]; //初始化 leds
 CRGB ON_Color = CRGB::Coral; // 珊瑚色
 CRGB OFF_Color = CRGB::CornflowerBlue; // 菊蓝
@@ -86,7 +86,8 @@ bool Bool_Status_Light_3;
 
 // 2812 LED SETTING
 #define LED_TYPE WS2812B
-#define COLOR_ORDER RGB
+// 2812mini 顺序 GRB
+#define COLOR_ORDER GRB
 int BRIGHTNESS = 64;
 
 // 定义状态灯编号，按照灯带顺序
