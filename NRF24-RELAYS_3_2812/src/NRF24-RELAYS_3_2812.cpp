@@ -18,7 +18,10 @@ char SKETCH_VERSION[] = "1.9";
 /*OTA Featuer*/
 #define MY_OTA_FIRMWARE_FEATURE
 //#define MY_SECURITY_SIMPLE_PASSWD "FUCKYOU"  //简单加密，必须要求双向，即网关节点全部采用同一标准
-#define MY_REPEATER_FEATURE //注释下列启用中继功能
+// 开启中继功能
+#define MY_REPEATER_FEATURE
+// 增加等待连接超时，允许离线启动
+#define MY_TRANSPORT_WAIT_READY_MS 5000 
 #define MY_RX_MESSAGE_BUFFER_FEATURE
 #define MY_RX_MESSAGE_BUFFER_SIZE 10 //8MHZ 5-10 no-define 20  no-irq 3
 //#define MY_RF24_BASE_RADIO_ID 0x00,0xFC,0xE1,0xA8,0xA8 //多网关模式节点
