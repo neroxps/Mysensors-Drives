@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #define MY_DEBUG
 
 /*Raido*/
@@ -225,6 +226,98 @@ void presentation() {
   present(CHILD_ID_LIGHT, S_DIMMER, "Dimmer" );
 }
 
+/* Status LED*/
+void changStatusLed(bool &Status_Light, int action) {
+  action == 1 ? Status_Light = true : Status_Light = false;
+}
+
+void changeState(int childId, int newState) {
+  switch (childId) {
+    case CHILD_ID_RELAY1:
+      wait(20);
+      send(msgrelay1.set(newState));
+      digitalWrite(RELAY1_PIN, newState);
+      state1 = newState;
+      saveState(5, state1);
+      changStatusLed(Bool_Status_Light_1, !newState); //LED反向指令
+      break;
+    case CHILD_ID_RELAY2:
+      wait(20);
+      send(msgrelay2.set(newState));
+      digitalWrite(RELAY2_PIN, newState);
+      state2 = newState;
+      saveState(6, state2);
+      changStatusLed(Bool_Status_Light_2, !newState); //LED反向指令
+      break;
+    case CHILD_ID_RELAY3:
+      wait(20);
+      send(msgrelay3.set(newState));
+      digitalWrite(RELAY3_PIN, newState);
+      state3 = newState;
+      saveState(7, state3);
+      changStatusLed(Bool_Status_Light_3, !newState); //LED反向指令
+      break;
+    default:
+      break;
+  }
+}
+
+/* 切换灯光颜色，渐变效果 */
+void ChangeListener(CRGB &Src_Color, CRGB &Dst_Color) {
+  // 如果当前当前颜色与目标颜色一致，直接 return 返回
+  if (Src_Color == Dst_Color) {
+    return;
+  }
+  /// 首先降低原先 LED 灯光亮度
+  /// 放入主循环中，不能延迟，每5毫秒执行一次。
+  EVERY_N_MILLISECONDS(5) {
+    if (!Src_Color) {
+      Src_Color.fadeToBlackBy(10);
+      FastLED.show();
+    }
+  }
+  /// 等比例增加亮度到指定颜色
+  /// 放入主循环中，不能延迟，每10毫秒执行一次
+  EVERY_N_MILLISECONDS(10) {
+    if (Src_Color != Dst_Color) {
+      if (Src_Color.r != Dst_Color.r) {
+        Src_Color.r < Dst_Color.r ?  Src_Color.r++ : Src_Color.r -- ;
+      }
+      if (Src_Color.g != Dst_Color.g) {
+        Src_Color.g < Dst_Color.g ?  Src_Color.g++ : Src_Color.g -- ;
+      }
+      if (Src_Color.b != Dst_Color.b) {
+        Src_Color.b < Dst_Color.b ?  Src_Color.b++ : Src_Color.b -- ;
+      }
+      FastLED.show();
+    }
+  }
+}
+
+void dimmer() {
+  if (requestedLevel != currentLevel) {
+    currentLevel < requestedLevel ?  currentLevel++ : currentLevel -- ;
+    FastLED.setBrightness(currentLevel);
+    FastLED.show();
+    wait(10);
+  }
+}
+
+byte hextoint (byte c) {
+  if ((c >= '0') && (c <= '9')) return c - '0';
+  if ((c >= 'A') && (c <= 'F')) return c - 'A' + 10;
+  if ((c >= 'a') && (c <= 'f')) return c - 'a' + 10;
+  return 0;
+}
+
+/* hex转为 RGB */
+
+CRGB hexToCRGB(const char* hexstring)
+{
+    int32_t number = strtol( &hexstring[0], NULL, 16);
+    return CRGB(number);
+}
+
 void loop() {
   boolean changed1 = debouncer1.update();
   boolean changed2 = debouncer2.update();
@@ -267,38 +360,6 @@ void loop() {
     Bool_Status_Light_3  ? ChangeListener(leds[SWITCH3_LED], OFF_Color) : ChangeListener(leds[SWITCH3_LED], ON_Color) ;
   }
   dimmer();
-}
-
-
-void changeState(int childId, int newState) {
-  switch (childId) {
-    case CHILD_ID_RELAY1:
-      wait(20);
-      send(msgrelay1.set(newState));
-      digitalWrite(RELAY1_PIN, newState);
-      state1 = newState;
-      saveState(5, state1);
-      changStatusLed(Bool_Status_Light_1, !newState); //LED反向指令
-      break;
-    case CHILD_ID_RELAY2:
-      wait(20);
-      send(msgrelay2.set(newState));
-      digitalWrite(RELAY2_PIN, newState);
-      state2 = newState;
-      saveState(6, state2);
-      changStatusLed(Bool_Status_Light_2, !newState); //LED反向指令
-      break;
-    case CHILD_ID_RELAY3:
-      wait(20);
-      send(msgrelay3.set(newState));
-      digitalWrite(RELAY3_PIN, newState);
-      state3 = newState;
-      saveState(7, state3);
-      changStatusLed(Bool_Status_Light_3, !newState); //LED反向指令
-      break;
-    default:
-      break;
-  }
 }
 
 void receive(const MyMessage & message) {
@@ -353,57 +414,4 @@ void receive(const MyMessage & message) {
     }
   }
 
-}
-
-void dimmer() {
-  if (requestedLevel != currentLevel) {
-    currentLevel < requestedLevel ?  currentLevel++ : currentLevel -- ;
-    FastLED.setBrightness(currentLevel);
-    FastLED.show();
-    wait(10);
-  }
-}
-
-byte hextoint (byte c) {
-  if ((c >= '0') && (c <= '9')) return c - '0';
-  if ((c >= 'A') && (c <= 'F')) return c - 'A' + 10;
-  if ((c >= 'a') && (c <= 'f')) return c - 'a' + 10;
-  return 0;
-}
-
-/* Status LED*/
-void changStatusLed(bool &Status_Light, int action) {
-  action == 1 ? Status_Light = true : Status_Light = false;
-}
-
-/* 切换灯光颜色，渐变效果 */
-void ChangeListener(CRGB &Src_Color, CRGB &Dst_Color) {
-  // 如果当前当前颜色与目标颜色一致，直接 return 返回
-  if (Src_Color == Dst_Color) {
-    return;
-  }
-  /// 首先降低原先 LED 灯光亮度
-  /// 放入主循环中，不能延迟，每5毫秒执行一次。
-  EVERY_N_MILLISECONDS(5) {
-    if (!Src_Color) {
-      Src_Color.fadeToBlackBy(10);
-      FastLED.show();
-    }
-  }
-  /// 等比例增加亮度到指定颜色
-  /// 放入主循环中，不能延迟，每10毫秒执行一次
-  EVERY_N_MILLISECONDS(10) {
-    if (Src_Color != Dst_Color) {
-      if (Src_Color.r != Dst_Color.r) {
-        Src_Color.r < Dst_Color.r ?  Src_Color.r++ : Src_Color.r -- ;
-      }
-      if (Src_Color.g != Dst_Color.g) {
-        Src_Color.g < Dst_Color.g ?  Src_Color.g++ : Src_Color.g -- ;
-      }
-      if (Src_Color.b != Dst_Color.b) {
-        Src_Color.b < Dst_Color.b ?  Src_Color.b++ : Src_Color.b -- ;
-      }
-      FastLED.show();
-    }
-  }
 }
