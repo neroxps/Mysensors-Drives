@@ -4,9 +4,9 @@
 /*Raido*/
 #define MY_RADIO_RF24 // Enable and select radio type attached 
 #define MY_RF24_PA_LEVEL RF24_PA_MAX //MINI LOW HIGH MAX
-// #define MY_RF24_IRQ_PIN 2
-// #define MY_RX_MESSAGE_BUFFER_FEATURE // IRQ 启动必须启动
-// #define MY_RX_MESSAGE_BUFFER_SIZE 10 //8MHZ 5-10 no-define 20  no-irq 3
+#define MY_RF24_IRQ_PIN 2
+#define MY_RX_MESSAGE_BUFFER_FEATURE // IRQ 启动必须启动
+#define MY_RX_MESSAGE_BUFFER_SIZE 10 //8MHZ 5-10 no-define 20  no-irq 3
 
 
 #define MY_BAUD_RATE 9600 //115200 19200 9600 =8MHZ  4800 =1MHZ
