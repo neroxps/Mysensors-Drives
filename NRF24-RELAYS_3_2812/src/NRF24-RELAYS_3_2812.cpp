@@ -4,7 +4,10 @@
 /*Raido*/
 #define MY_RADIO_RF24 // Enable and select radio type attached 
 #define MY_RF24_PA_LEVEL RF24_PA_MAX //MINI LOW HIGH MAX
-#define MY_RF24_IRQ_PIN 2
+// #define MY_RF24_IRQ_PIN 2
+// #define MY_RX_MESSAGE_BUFFER_FEATURE // IRQ 启动必须启动
+// #define MY_RX_MESSAGE_BUFFER_SIZE 10 //8MHZ 5-10 no-define 20  no-irq 3
+
 
 #define MY_BAUD_RATE 9600 //115200 19200 9600 =8MHZ  4800 =1MHZ
 
@@ -13,8 +16,8 @@
 //#define MY_TRANSPORT_UPLINK_CHECK_DISABLED
 //#define MY_PARENT_NODE_IS_STATIC //only for clone si24r1
 //#define MY_PARENT_NODE_ID 0 //only for clone si24r1
-char SKETCH_NAME[] = "Relay Actuator";
-char SKETCH_VERSION[] = "1.9";
+char SKETCH_NAME[] = "Relay Actuator 2812MINI";
+char SKETCH_VERSION[] = "1.10";
 
 /*OTA Featuer*/
 #define MY_OTA_FIRMWARE_FEATURE
@@ -23,8 +26,7 @@ char SKETCH_VERSION[] = "1.9";
 #define MY_REPEATER_FEATURE
 // 增加等待连接超时，允许离线启动
 #define MY_TRANSPORT_WAIT_READY_MS 5000 
-#define MY_RX_MESSAGE_BUFFER_FEATURE
-#define MY_RX_MESSAGE_BUFFER_SIZE 10 //8MHZ 5-10 no-define 20  no-irq 3
+
 //#define MY_RF24_BASE_RADIO_ID 0x00,0xFC,0xE1,0xA8,0xA8 //多网关模式节点
 /*Child ID*/
 /*
@@ -39,7 +41,8 @@ char SKETCH_VERSION[] = "1.9";
 #define CHILD_ID_RELAY1 81 //Relay
 #define CHILD_ID_RELAY2 82 //Relay
 #define CHILD_ID_RELAY3 83 //Relay
-#define CHILD_ID_LIGHT  80
+#define CHILD_ID_LIGHT_ON  80
+#define CHILD_ID_LIGHT_OFF  84
 /*
   #define CHILD_ID_IR 100 //Lock Sensor
   #define CHILD_ID_LOCK 110 //Lock Sensor
@@ -79,17 +82,21 @@ static int16_t currentLevel;
 #define DATA_PIN 3 // L1
 #define NUM_LEDS 3 // LED 数量
 CRGB leds[NUM_LEDS]; //初始化 leds
-CRGB ON_Color = CRGB::Coral; // 珊瑚色
-CRGB OFF_Color = CRGB::CornflowerBlue; // 菊蓝
+CRGB ON_Color;
+CRGB OFF_Color;
 bool Bool_Status_Light_1;
 bool Bool_Status_Light_2;
 bool Bool_Status_Light_3;
 
 // 2812 LED SETTING
-#define LED_TYPE WS2812B
+#define LED_TYPE WS2812
+
+// 2812D-F5 顺序 RGB
+// #define COLOR_ORDER RGB
+
 // 2812mini 顺序 GRB
 #define COLOR_ORDER GRB
-int BRIGHTNESS = 64;
+// int BRIGHTNESS = 64;
 
 // 定义状态灯编号，按照灯带顺序
 #define SWITCH1_LED 0 // 1 Light
@@ -107,9 +114,25 @@ MyMessage msgrelay1(CHILD_ID_RELAY1, V_STATUS);
 MyMessage msgrelay2(CHILD_ID_RELAY2, V_STATUS);
 MyMessage msgrelay3(CHILD_ID_RELAY3, V_STATUS);
 MyMessage msgvar1(S_CUSTOM, V_VAR1); //relays数量
-MyMessage lightMsg(CHILD_ID_LIGHT, V_LIGHT);
-MyMessage rgbMsg(CHILD_ID_LIGHT, V_RGB);
-MyMessage dimmerMsg(CHILD_ID_LIGHT, V_DIMMER);
+MyMessage lightMsgON(CHILD_ID_LIGHT_ON, V_LIGHT);
+MyMessage rgbMsgON(CHILD_ID_LIGHT_ON, V_RGB);
+MyMessage dimmerMsgON(CHILD_ID_LIGHT_ON, V_DIMMER);
+MyMessage lightMsgOFF(CHILD_ID_LIGHT_OFF, V_LIGHT);
+MyMessage rgbMsgOFF(CHILD_ID_LIGHT_OFF, V_RGB);
+MyMessage dimmerMsgOFF(CHILD_ID_LIGHT_OFF, V_DIMMER);
+
+byte hextoint (byte c) {
+  if ((c >= '0') && (c <= '9')) return c - '0';
+  if ((c >= 'A') && (c <= 'F')) return c - 'A' + 10;
+  if ((c >= 'a') && (c <= 'f')) return c - 'a' + 10;
+  return 0;
+}
+
+/* hex转为 RGB */
+CRGB hexToCRGB(const char* hexstring){
+    int32_t number = strtol( &hexstring[0], NULL, 16);
+    return CRGB(number);
+}
 
 void blinkity(uint8_t pulses, uint8_t repetitions) {
   for (int x = 0; x < repetitions; x++) {
@@ -122,7 +145,6 @@ void blinkity(uint8_t pulses, uint8_t repetitions) {
     delay(100);
   }
 }
-
 
 void before() {
   /*PWM LED Initialize*/
@@ -154,8 +176,6 @@ void before() {
 
   currentLevel = loadState(10);
 
-  //  CRGB ON_Color = 0xFF017F;
-  //  CRGB OFF_Color = 0xFF007F;
   digitalWrite(RELAY1_PIN, state1);
   digitalWrite(RELAY2_PIN, state2);
   digitalWrite(RELAY3_PIN, state3);
@@ -195,15 +215,19 @@ void setup() {
   FastLED.setBrightness(currentLevel);
 
   /*递交WS2812RGB调光面板接口属性值*/
-  send(dimmerMsg.set(currentLevel));
+  send(dimmerMsgON.set(currentLevel));
+  send(dimmerMsgOFF.set(currentLevel));
   wait(50);
   if (currentLevel != 0) {
-    send(lightMsg.set("1"));
+    send(lightMsgON.set("1"));
+    send(lightMsgOFF.set("1"));
   }
   else {
-    send(lightMsg.set("0"));
+    send(lightMsgON.set("0"));
+    send(lightMsgOFF.set("0"));
   }
-  send(rgbMsg.set("000000"));
+  send(rgbMsgON.set("000000"));
+  send(rgbMsgOFF.set("000000"));
 }
 
 void presentation() {
@@ -221,9 +245,12 @@ void presentation() {
   wait(50);
   present(S_CUSTOM, V_VAR1, "Relay:Mode");
   wait(50);
-  present(CHILD_ID_LIGHT, S_RGB_LIGHT, "RGB");
+  present(CHILD_ID_LIGHT_ON, S_RGB_LIGHT, "RGB");
   wait(50);
-  present(CHILD_ID_LIGHT, S_DIMMER, "Dimmer" );
+  present(CHILD_ID_LIGHT_ON, S_DIMMER, "Dimmer" );
+  present(CHILD_ID_LIGHT_OFF, S_RGB_LIGHT, "RGB");
+  wait(50);
+  present(CHILD_ID_LIGHT_OFF, S_DIMMER, "Dimmer" );
 }
 
 /* Status LED*/
@@ -289,7 +316,6 @@ void ChangeListener(CRGB &Src_Color, CRGB &Dst_Color) {
       if (Src_Color.b != Dst_Color.b) {
         Src_Color.b < Dst_Color.b ?  Src_Color.b++ : Src_Color.b -- ;
       }
-      FastLED.show();
     }
   }
 }
@@ -298,24 +324,49 @@ void dimmer() {
   if (requestedLevel != currentLevel) {
     currentLevel < requestedLevel ?  currentLevel++ : currentLevel -- ;
     FastLED.setBrightness(currentLevel);
-    FastLED.show();
     wait(10);
   }
 }
 
-byte hextoint (byte c) {
-  if ((c >= '0') && (c <= '9')) return c - '0';
-  if ((c >= 'A') && (c <= 'F')) return c - 'A' + 10;
-  if ((c >= 'a') && (c <= 'f')) return c - 'a' + 10;
-  return 0;
-}
-
-/* hex转为 RGB */
-
-CRGB hexToCRGB(const char* hexstring)
-{
-    int32_t number = strtol( &hexstring[0], NULL, 16);
-    return CRGB(number);
+void colour_refresh(){
+  if (Bool_Status_Light_1)
+  {
+    if (leds[SWITCH1_LED] != OFF_Color){
+      ChangeListener(leds[SWITCH1_LED], OFF_Color);
+    }
+  }
+  else 
+  {
+    if (leds[SWITCH1_LED] != ON_Color){
+      ChangeListener(leds[SWITCH1_LED], ON_Color);
+    }
+  }
+  if ( num < 2){ return; }
+  if (Bool_Status_Light_2)
+  {
+    if (leds[SWITCH2_LED] != OFF_Color){
+      ChangeListener(leds[SWITCH2_LED], OFF_Color);
+    }
+  }
+  else 
+  {
+    if (leds[SWITCH2_LED] != ON_Color){
+      ChangeListener(leds[SWITCH2_LED], ON_Color);
+    }
+  }
+  if ( num < 3){ return; }
+  if (Bool_Status_Light_3)
+  {
+    if (leds[SWITCH3_LED] != OFF_Color){
+      ChangeListener(leds[SWITCH3_LED], OFF_Color);
+    }
+  }
+  else 
+  {
+    if (leds[SWITCH3_LED] != ON_Color){
+      ChangeListener(leds[SWITCH3_LED], ON_Color);
+    }
+  }
 }
 
 void loop() {
@@ -351,7 +402,6 @@ void loop() {
   }
 
   // 状态灯更新
-
   Bool_Status_Light_1  ? ChangeListener(leds[SWITCH1_LED], OFF_Color) : ChangeListener(leds[SWITCH1_LED], ON_Color) ;
   if ( num > 1) {
     Bool_Status_Light_2  ? ChangeListener(leds[SWITCH2_LED], OFF_Color) : ChangeListener(leds[SWITCH2_LED], ON_Color) ;
@@ -359,7 +409,13 @@ void loop() {
   if ( num > 2) {
     Bool_Status_Light_3  ? ChangeListener(leds[SWITCH3_LED], OFF_Color) : ChangeListener(leds[SWITCH3_LED], ON_Color) ;
   }
+
+  // 颜色更新
+  colour_refresh();
+  // 亮度改变
   dimmer();
+
+  FastLED.show();
 }
 
 void receive(const MyMessage & message) {
@@ -396,20 +452,46 @@ void receive(const MyMessage & message) {
     //  Retrieve the power or dim level from the incoming request message
     if (message.type == V_RGB) {
       String hexstring = message.getString();
+      // Serial.println(hexstring);
       hexstring.toCharArray(RGB_ON, sizeof(RGB_ON));
-      hexstring = String("0x") + hexstring;
-      send(rgbMsg.set(RGB_ON));
-      Serial.println(hexstring);
+      // hexstring = String("0x") + hexstring;
+      send(rgbMsgON.set(RGB_ON));
+      ON_Color = hexToCRGB(RGB_ON);
+      // Serial.println(RGB_ON);
     }
 
     if (message.type == V_LIGHT ) {
       requestedLevel = ( message.getBool() > 0 ? 100 : 0 );
-      send(lightMsg.set(requestedLevel > 0));
+      send(lightMsgON.set(requestedLevel > 0));
     }
 
     if (message.type == V_PERCENTAGE) {
       requestedLevel = atoi( message.data );
-      send(dimmerMsg.set(requestedLevel));
+      send(dimmerMsgON.set(requestedLevel));
+      saveState(10, requestedLevel);
+    }
+  }
+
+  if (message.sensor == 84) {
+    //  Retrieve the power or dim level from the incoming request message
+    if (message.type == V_RGB) {
+      String hexstring = message.getString();
+      // Serial.println(hexstring);
+      hexstring.toCharArray(RGB_OFF, sizeof(RGB_OFF));
+      // hexstring = String("0x") + hexstring;
+      send(rgbMsgOFF.set(RGB_OFF));
+      OFF_Color = hexToCRGB(RGB_OFF);
+      // Serial.println(RGB_OFF);
+    }
+
+    if (message.type == V_LIGHT ) {
+      requestedLevel = ( message.getBool() > 0 ? 100 : 0 );
+      send(lightMsgOFF.set(requestedLevel > 0));
+    }
+
+    if (message.type == V_PERCENTAGE) {
+      requestedLevel = atoi( message.data );
+      send(dimmerMsgOFF.set(requestedLevel));
       saveState(10, requestedLevel);
     }
   }
