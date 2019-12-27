@@ -17,7 +17,7 @@
 //#define MY_PARENT_NODE_IS_STATIC //only for clone si24r1
 //#define MY_PARENT_NODE_ID 0 //only for clone si24r1
 char SKETCH_NAME[] = "Relay Actuator 2812MINI";
-char SKETCH_VERSION[] = "1.10";
+char SKETCH_VERSION[] = "1.10.1";
 
 /*OTA Featuer*/
 #define MY_OTA_FIRMWARE_FEATURE
@@ -67,12 +67,12 @@ bool state1, state2, state3;
 bool oldValue1, oldValue2, oldValue3;
 int num, mode;
 
-char RGB_ON[7] = "ffffff";
-char RGB_OFF[7] = "ffffff";
+char RGB_ON[7];
+char RGB_OFF[7];
 int r, g, b;
 String hexstring;
-static int16_t requestedLevel;
-static int16_t currentLevel;
+static uint8_t requestedLevel;
+static uint8_t currentLevel;
 
 #include <MySensors.h>
 #include <Bounce2.h>
@@ -82,8 +82,8 @@ static int16_t currentLevel;
 #define DATA_PIN 3 // L1
 #define NUM_LEDS 3 // LED 数量
 CRGB leds[NUM_LEDS]; //初始化 leds
-CRGB ON_Color;
-CRGB OFF_Color;
+CRGB ON_Color(CRGB::Red);
+CRGB OFF_Color(CRGB::Blue);
 bool Bool_Status_Light_1;
 bool Bool_Status_Light_2;
 bool Bool_Status_Light_3;
@@ -92,10 +92,10 @@ bool Bool_Status_Light_3;
 #define LED_TYPE WS2812
 
 // 2812D-F5 顺序 RGB
-// #define COLOR_ORDER RGB
+#define COLOR_ORDER RGB
 
 // 2812mini 顺序 GRB
-#define COLOR_ORDER GRB
+// #define COLOR_ORDER GRB
 // int BRIGHTNESS = 64;
 
 // 定义状态灯编号，按照灯带顺序
@@ -146,6 +146,19 @@ void blinkity(uint8_t pulses, uint8_t repetitions) {
   }
 }
 
+// 设置亮度
+uint8_t Percentage_to_uint8_t(uint8_t value)
+{
+  if (value >= 100)
+  {
+    // Serial.println("value > 100");
+    return 255;
+  }
+  float new_value = (float)value / 100 * 255;
+  // Serial.println((int)new_value);
+  return (int)new_value;
+}
+
 void before() {
   /*PWM LED Initialize*/
   pinMode(RELAY1_PIN, OUTPUT);
@@ -175,7 +188,7 @@ void before() {
   state3 = loadState(7);
 
   currentLevel = loadState(10);
-
+  requestedLevel = currentLevel;
   digitalWrite(RELAY1_PIN, state1);
   digitalWrite(RELAY2_PIN, state2);
   digitalWrite(RELAY3_PIN, state3);
@@ -212,7 +225,9 @@ void setup() {
 
   /*Led Build*/
   FastLED.addLeds<LED_TYPE, DATA_PIN, COLOR_ORDER>(leds, NUM_LEDS);
-  FastLED.setBrightness(currentLevel);
+  FastLED.setBrightness(Percentage_to_uint8_t(currentLevel));
+  // Serial.print("setBrightness:");
+  // Serial.println(Percentage_to_uint8_t(currentLevel));
 
   /*递交WS2812RGB调光面板接口属性值*/
   send(dimmerMsgON.set(currentLevel));
@@ -226,8 +241,9 @@ void setup() {
     send(lightMsgON.set("0"));
     send(lightMsgOFF.set("0"));
   }
-  send(rgbMsgON.set("000000"));
-  send(rgbMsgOFF.set("000000"));
+  // 默认 ON 是红灯 OFF 是蓝灯
+  send(rgbMsgON.set("ff0000"));
+  send(rgbMsgOFF.set("0000ff"));
 }
 
 void presentation() {
@@ -317,14 +333,21 @@ void ChangeListener(CRGB &Src_Color, CRGB &Dst_Color) {
         Src_Color.b < Dst_Color.b ?  Src_Color.b++ : Src_Color.b -- ;
       }
     }
+    FastLED.show();
   }
 }
 
 void dimmer() {
-  if (requestedLevel != currentLevel) {
-    currentLevel < requestedLevel ?  currentLevel++ : currentLevel -- ;
-    FastLED.setBrightness(currentLevel);
-    wait(10);
+  EVERY_N_MILLISECONDS(10) {
+    if (requestedLevel != currentLevel) {
+      currentLevel < requestedLevel ?  currentLevel++ : currentLevel -- ;
+      // Serial.print("requestedLevel: ");
+      // Serial.print((int)requestedLevel);
+      // Serial.print("currentLevel: ");
+      // Serial.println((int)currentLevel);
+      FastLED.setBrightness(Percentage_to_uint8_t(currentLevel));
+      FastLED.show();
+    }
   }
 }
 
@@ -415,7 +438,10 @@ void loop() {
   // 亮度改变
   dimmer();
 
-  FastLED.show();
+  // 读取传感器温度
+  // EVERY_N_SECONDS(5){
+  //   Serial.println(hwCPUTemperature(), 1);
+  // }
 }
 
 void receive(const MyMessage & message) {
@@ -436,8 +462,8 @@ void receive(const MyMessage & message) {
     strcpy(buf, (message.data));
     sscanf(buf, "%d:%d", &num, &mode);
     if ( num > 3 || mode > 1 ) {
-      int num = 1;
-      int mode = 0 ;
+      num = 1;
+      mode = 0 ;
     }
     else {
       saveState(1, num);
@@ -462,11 +488,18 @@ void receive(const MyMessage & message) {
 
     if (message.type == V_LIGHT ) {
       requestedLevel = ( message.getBool() > 0 ? 100 : 0 );
+      // Serial.print("V_LIGHT requestedLevel: ");
+      // Serial.println((int)requestedLevel);
       send(lightMsgON.set(requestedLevel > 0));
     }
 
     if (message.type == V_PERCENTAGE) {
       requestedLevel = atoi( message.data );
+      if (requestedLevel > 100){
+        requestedLevel = 100;
+      }
+      // Serial.print("V_PERCENTAGE requestedLevel: ");
+      // Serial.println((int)requestedLevel);
       send(dimmerMsgON.set(requestedLevel));
       saveState(10, requestedLevel);
     }
@@ -491,6 +524,9 @@ void receive(const MyMessage & message) {
 
     if (message.type == V_PERCENTAGE) {
       requestedLevel = atoi( message.data );
+      if (requestedLevel > 100){
+        requestedLevel = 100;
+      }
       send(dimmerMsgOFF.set(requestedLevel));
       saveState(10, requestedLevel);
     }
